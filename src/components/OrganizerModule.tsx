@@ -29,7 +29,7 @@ export function OrganizerModule() {
 
   useEffect(() => {
     fetchPredictions()
-    const interval = setInterval(fetchPredictions, 30000) // update every 30s
+    const interval = setInterval(fetchPredictions, 120000) // update every 2 mins
     return () => clearInterval(interval)
   }, [])
 

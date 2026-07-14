@@ -60,7 +60,8 @@ export function FanModule() {
     if (!input.trim()) return
 
     const userMessage = input.trim()
-    setMessages((prev) => [...prev, { role: "user", text: userMessage }])
+    const newMessages: { role: "user" | "ai"; text: string }[] = [...messages, { role: "user", text: userMessage }]
+    setMessages(newMessages)
     setInput("")
     setIsLoading(true)
 
@@ -68,7 +69,7 @@ export function FanModule() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ messages: newMessages }),
       })
 
       if (!response.ok) {
