@@ -6,8 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
+type PredictionData = {
+  incidentCount: number;
+  hotspots: { location: string; estimatedWaitTime: string; severity: "Medium" | "High" }[];
+  recommendations: string[];
+};
+
 export function OrganizerModule() {
-  const [predictions, setPredictions] = useState<any>(null)
+  const [predictions, setPredictions] = useState<PredictionData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
@@ -100,7 +106,7 @@ export function OrganizerModule() {
               <ScrollArea className="h-[200px] pr-4">
                 {predictions?.hotspots ? (
                   <div className="space-y-4">
-                    {predictions.hotspots.map((h: any, i: number) => (
+                    {predictions.hotspots.map((h, i) => (
                       <div key={i} className="flex justify-between items-center p-3 rounded-lg border bg-card shadow-sm hover:shadow-md transition-shadow">
                         <div>
                           <p className="font-medium">{h.location}</p>

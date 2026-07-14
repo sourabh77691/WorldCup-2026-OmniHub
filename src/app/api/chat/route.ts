@@ -1,15 +1,30 @@
 import { NextResponse } from "next/server"
-import { GoogleGenAI } from "@google/genai"
+import { GoogleGenAI, Type } from "@google/genai"
+import { z } from "zod"
+import { chatRateLimiter } from "@/lib/rateLimit"
+
+const ChatRequestSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(["user", "ai"]),
+    text: z.string()
+  }))
+})
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json()
-
-    if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json({ error: "Messages array is required" }, { status: 400 })
+    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    if (!chatRateLimiter.check(ip)) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again later." }, { status: 429 });
     }
+
+    const parsed = ChatRequestSchema.safeParse(await req.json())
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid request format", details: parsed.error }, { status: 400 })
+    }
+    const { messages } = parsed.data
 
     const conversation = messages.map((m: any) => `${m.role === 'ai' ? 'Assistant' : 'User'}: ${m.text}`).join('\n\n');
 
@@ -21,11 +36,31 @@ export async function POST(req: Request) {
           parts: [{ text: `You are a helpful stadium assistant for the FIFA World Cup 2026. Keep answers concise. Here is the conversation history:\n\n${conversation}\n\nPlease respond to the user's last message.` }],
         },
       ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            reply: {
+              type: Type.STRING,
+              description: "The assistant's conversational reply to the user.",
+            },
+            highlightGate: {
+              type: Type.STRING,
+              description: "The specific stadium gate to highlight on the map (A, B, C, or D). Return null if no gate should be highlighted.",
+              nullable: true,
+            },
+          },
+          required: ["reply", "highlightGate"],
+        },
+      }
     })
 
-    const reply = response.text || "Sorry, I couldn't generate a response."
+    const result = JSON.parse(response.text || "{}")
+    const reply = result.reply || "Sorry, I couldn't generate a response."
+    const highlightGate = result.highlightGate || null
 
-    return NextResponse.json({ reply })
+    return NextResponse.json({ reply, highlightGate })
   } catch (error: any) {
     console.error("Chat API error:", error)
     return NextResponse.json({ error: error.message || "Failed to process chat" }, { status: 500 })

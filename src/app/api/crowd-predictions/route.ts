@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server"
 import { GoogleGenAI, Type, Schema } from "@google/genai"
+import { crowdRateLimiter } from "@/lib/rateLimit"
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    if (!crowdRateLimiter.check(ip)) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again later." }, { status: 429 });
+    }
+
     const response = await ai.models.generateContent({
       model: "gemini-flash-latest",
       contents: [

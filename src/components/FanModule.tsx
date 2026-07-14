@@ -1,15 +1,20 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import React, { useState } from "react"
 import { Send, Map, Navigation } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-const StadiumMap = ({ activeGate }: { activeGate: string | null }) => {
+const StadiumMap = React.memo(({ activeGate }: { activeGate: string | null }) => {
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-slate-50 dark:bg-slate-900 rounded-b-xl overflow-hidden min-h-[300px]">
+    <div 
+      className="relative w-full h-full flex items-center justify-center bg-slate-50 dark:bg-slate-900 rounded-b-xl overflow-hidden min-h-[300px]"
+      role="region"
+      aria-label="Interactive map of the stadium"
+      aria-live="polite"
+    >
       {/* Pitch */}
       <div className="absolute w-24 h-40 md:w-32 md:h-48 bg-green-500/10 border-2 border-green-500/30 rounded-sm z-10 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-green-500/30 rounded-full" />
@@ -37,7 +42,8 @@ const StadiumMap = ({ activeGate }: { activeGate: string | null }) => {
       </div>
     </div>
   )
-}
+})
+StadiumMap.displayName = "StadiumMap"
 
 export function FanModule() {
   const [messages, setMessages] = useState<{ role: "user" | "ai"; text: string }[]>([
@@ -45,16 +51,7 @@ export function FanModule() {
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-
-  // Derive active gate from the last AI response (or user query if AI is loading)
-  const activeGate = useMemo(() => {
-    const lastText = messages[messages.length - 1]?.text.toLowerCase() || "";
-    if (lastText.includes("gate a")) return "A";
-    if (lastText.includes("gate b")) return "B";
-    if (lastText.includes("gate c")) return "C";
-    if (lastText.includes("gate d")) return "D";
-    return null;
-  }, [messages])
+  const [activeGate, setActiveGate] = useState<string | null>(null)
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -79,6 +76,10 @@ export function FanModule() {
       
       const data = await response.json()
       setMessages((prev) => [...prev, { role: "ai", text: data.reply }])
+      
+      if (data.highlightGate !== undefined) {
+        setActiveGate(data.highlightGate)
+      }
     } catch (error: any) {
       console.error("Error:", error)
       const errorMsg = error.message || "Sorry, I'm having trouble connecting right now."
@@ -123,6 +124,7 @@ export function FanModule() {
           </ScrollArea>
           <div className="flex items-center gap-2 pt-4 border-t mt-auto">
             <Input
+              id="chat-input"
               placeholder="E.g., How do I get to Gate A?"
               value={input}
               onChange={(e) => setInput(e.target.value)}
