@@ -1,11 +1,43 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Send, Map, Navigation } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
+const StadiumMap = ({ activeGate }: { activeGate: string | null }) => {
+  return (
+    <div className="relative w-full h-full flex items-center justify-center bg-slate-50 dark:bg-slate-900 rounded-b-xl overflow-hidden min-h-[300px]">
+      {/* Pitch */}
+      <div className="absolute w-24 h-40 md:w-32 md:h-48 bg-green-500/10 border-2 border-green-500/30 rounded-sm z-10 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-green-500/30 rounded-full" />
+        <div className="absolute w-full h-0 border-t-2 border-green-500/30" />
+      </div>
+
+      {/* North Stand - Gate A */}
+      <div className={`absolute top-4 md:top-8 w-40 md:w-48 h-12 md:h-16 rounded-t-2xl border-2 flex items-center justify-center transition-all duration-500 ${activeGate === 'A' ? 'bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(37,99,235,0.4)] scale-105 z-20' : 'bg-muted border-muted-foreground/20 text-muted-foreground'}`}>
+        <span className="font-bold text-sm md:text-base">Gate A (North)</span>
+      </div>
+
+      {/* South Stand - Gate C */}
+      <div className={`absolute bottom-4 md:bottom-8 w-40 md:w-48 h-12 md:h-16 rounded-b-2xl border-2 flex items-center justify-center transition-all duration-500 ${activeGate === 'C' ? 'bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(37,99,235,0.4)] scale-105 z-20' : 'bg-muted border-muted-foreground/20 text-muted-foreground'}`}>
+        <span className="font-bold text-sm md:text-base">Gate C (South)</span>
+      </div>
+
+      {/* East Stand - Gate B */}
+      <div className={`absolute right-4 md:right-8 w-12 md:w-16 h-40 md:h-48 rounded-r-2xl border-2 flex items-center justify-center transition-all duration-500 ${activeGate === 'B' ? 'bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(37,99,235,0.4)] scale-105 z-20' : 'bg-muted border-muted-foreground/20 text-muted-foreground'}`}>
+        <span className="font-bold text-sm md:text-base -rotate-90 whitespace-nowrap">Gate B (East)</span>
+      </div>
+
+      {/* West Stand - Gate D */}
+      <div className={`absolute left-4 md:left-8 w-12 md:w-16 h-40 md:h-48 rounded-l-2xl border-2 flex items-center justify-center transition-all duration-500 ${activeGate === 'D' ? 'bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(37,99,235,0.4)] scale-105 z-20' : 'bg-muted border-muted-foreground/20 text-muted-foreground'}`}>
+        <span className="font-bold text-sm md:text-base -rotate-90 whitespace-nowrap">Gate D (West)</span>
+      </div>
+    </div>
+  )
+}
 
 export function FanModule() {
   const [messages, setMessages] = useState<{ role: "user" | "ai"; text: string }[]>([
@@ -13,6 +45,16 @@ export function FanModule() {
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  // Derive active gate from the last AI response (or user query if AI is loading)
+  const activeGate = useMemo(() => {
+    const lastText = messages[messages.length - 1]?.text.toLowerCase() || "";
+    if (lastText.includes("gate a")) return "A";
+    if (lastText.includes("gate b")) return "B";
+    if (lastText.includes("gate c")) return "C";
+    if (lastText.includes("gate d")) return "D";
+    return null;
+  }, [messages])
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -96,18 +138,24 @@ export function FanModule() {
       </Card>
       
       <div className="flex flex-col gap-6 h-full">
-        <Card className="flex-1 border-secondary/20 shadow-md">
-          <CardHeader className="bg-secondary/10 pb-4 border-b">
+        <Card className="flex-1 border-secondary/20 shadow-md overflow-hidden flex flex-col">
+          <CardHeader className="bg-secondary/10 pb-4 border-b shrink-0">
             <CardTitle className="flex items-center gap-2">
               <Map className="w-5 h-5 text-primary" /> Stadium Map
             </CardTitle>
             <CardDescription>Live routing to your seat.</CardDescription>
           </CardHeader>
-          <CardContent className="p-0 flex items-center justify-center h-[calc(100%-72px)] bg-muted/30">
-            <div className="text-center p-6 text-muted-foreground">
-              <Navigation className="w-12 h-12 mx-auto mb-2 opacity-20" />
-              <p className="text-sm">Interactive map will appear here based on your chat queries.</p>
-            </div>
+          <CardContent className="p-0 flex-1 flex flex-col bg-muted/30 relative">
+            {activeGate ? (
+               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-primary/90 text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full shadow-lg">
+                 Routing to Gate {activeGate}...
+               </div>
+            ) : (
+               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-muted/90 text-muted-foreground text-xs font-semibold px-3 py-1 rounded-full shadow-md">
+                 Ask bot for directions
+               </div>
+            )}
+            <StadiumMap activeGate={activeGate} />
           </CardContent>
         </Card>
       </div>
