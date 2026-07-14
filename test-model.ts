@@ -11,8 +11,9 @@ async function test(modelName: string) {
       contents: [{ role: "user", parts: [{ text: "hello" }] }],
     });
     console.log(`[SUCCESS] ${modelName}:`, response.text);
-  } catch (e: any) {
-    console.log(`[FAILED] ${modelName}:`, e.message);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.log(`[FAILED] ${modelName}:`, err.message);
   }
 }
 

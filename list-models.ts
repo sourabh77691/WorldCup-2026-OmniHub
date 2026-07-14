@@ -9,7 +9,7 @@ async function listModels() {
   try {
     const models = await ai.models.list();
     console.log("Models:");
-    // @ts-ignore
+    // @ts-expect-error GenAI types might be missing model field but it exists on response
     models.forEach((m) => console.log(m.name));
   } catch (error) {
     console.error("Error listing models:", error);

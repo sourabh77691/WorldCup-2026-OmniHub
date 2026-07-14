@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Send, Map, Navigation, Settings2, Accessibility } from "lucide-react"
+import { Send, Map, Settings2, Accessibility } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -20,7 +20,7 @@ const StadiumMap = React.memo(({ activeGate }: { activeGate: string | null }) =>
       aria-live="polite"
     >
       {/* Pitch */}
-      <div className="absolute w-24 h-40 md:w-32 md:h-48 bg-green-500/10 border-2 border-green-500/30 rounded-sm z-10 flex items-center justify-center">
+      <div aria-hidden="true" className="absolute w-24 h-40 md:w-32 md:h-48 bg-green-500/10 border-2 border-green-500/30 rounded-sm z-10 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-green-500/30 rounded-full" />
         <div className="absolute w-full h-0 border-t-2 border-green-500/30" />
       </div>
@@ -70,9 +70,10 @@ export function FanModule() {
           {/* New Problem Statement Alignment Features */}
           <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-border/50">
             <div className="flex items-center gap-2">
-              <Settings2 className="w-4 h-4 text-muted-foreground" />
+              <Label htmlFor="language-selector" className="sr-only">Select Language</Label>
+              <Settings2 className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <Select value={language} onValueChange={(val) => val && setLanguage(val)}>
-                <SelectTrigger className="w-[120px] h-8 text-xs" aria-label="Select Language">
+                <SelectTrigger id="language-selector" className="w-[120px] h-8 text-xs" aria-label="Select Language">
                   <SelectValue placeholder="Language" />
                 </SelectTrigger>
                 <SelectContent>

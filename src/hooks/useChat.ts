@@ -48,8 +48,9 @@ export function useChat() {
       } else {
         setMessages([...newMessages, { role: "system", text: `Error: ${data.error || "Failed to process chat"}` }]);
       }
-    } catch (error: any) {
-      setMessages([...newMessages, { role: "system", text: `Network Error: ${error.message}` }]);
+    } catch (error: unknown) {
+      const err = error as Error;
+      setMessages([...newMessages, { role: "system", text: `Network Error: ${err.message}` }]);
     } finally {
       setIsLoading(false);
     }

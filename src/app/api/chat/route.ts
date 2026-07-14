@@ -6,7 +6,7 @@ import { chatRateLimiter } from "@/lib/rateLimit"
 const ChatRequestSchema = z.object({
   messages: z.array(z.object({
     role: z.enum(["user", "ai", "system"]),
-    text: z.string()
+    text: z.string().max(500, "Message is too long")
   })),
   language: z.string().optional().default("English"),
   accessibleRoute: z.boolean().optional().default(false)
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     }
     const { messages, language, accessibleRoute } = parsed.data;
 
-    const conversation = messages.map((m: any) => `${m.role === 'ai' ? 'Assistant' : 'User'}: ${m.text}`).join('\n\n');
+    const conversation = messages.map((m: { role: string; text: string }) => `${m.role === 'ai' ? 'Assistant' : 'User'}: ${m.text}`).join('\n\n');
     
     let systemInstruction = `You are a helpful stadium assistant for the FIFA World Cup 2026. Keep answers concise. `
     systemInstruction += `You MUST strictly reply in the following language: ${language}. `
@@ -71,10 +71,17 @@ export async function POST(req: Request) {
           }
         })
         break; // Success, exit retry loop
-      } catch (err: any) {
-        if (err?.message?.includes("503") || err?.status === 503) {
+      } catch (err: unknown) {
+        const error = err as { message?: string; status?: number };
+        if (error?.message?.includes("503") || error?.status === 503 || error?.message?.includes("429") || error?.status === 429 || error?.message?.toLowerCase().includes("rate limit")) {
           retries--;
-          if (retries === 0) throw new Error("The AI model is currently experiencing high demand. Please try again in a few moments.");
+          if (retries === 0) {
+            // Graceful fallback instead of throwing error to the UI
+            return NextResponse.json({ 
+              reply: "I'm currently experiencing very high demand and my circuits are a bit overloaded! Please try again in a moment while I catch my breath.",
+              highlightGate: null 
+            })
+          }
           await new Promise(res => setTimeout(res, delay));
           delay *= 2; // Exponential backoff
         } else {
@@ -88,8 +95,9 @@ export async function POST(req: Request) {
     const highlightGate = result.highlightGate || null
 
     return NextResponse.json({ reply, highlightGate })
-  } catch (error: any) {
-    console.error("Chat API error:", error)
-    return NextResponse.json({ error: error.message || "Failed to process chat" }, { status: 500 })
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("Chat API error:", err)
+    return NextResponse.json({ error: err.message || "Failed to process chat" }, { status: 500 })
   }
 }
