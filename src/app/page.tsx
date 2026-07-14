@@ -25,7 +25,7 @@ export default function Home() {
 
       <main className="flex-1 container mx-auto px-4 py-8">
         <Tabs defaultValue="fan" className="space-y-8">
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-8 sticky top-20 z-10 bg-background/95 backdrop-blur py-2 rounded-2xl shadow-sm border border-border/50">
             <TabsList className="grid w-full max-w-md grid-cols-2 p-1 bg-muted shadow-inner rounded-xl">
               <TabsTrigger value="fan" className="rounded-lg data-[state=active]:shadow-md py-2">
                 Fan Experience
