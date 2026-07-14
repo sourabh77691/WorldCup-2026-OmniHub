@@ -38,10 +38,8 @@ export function FanModule() {
       setMessages((prev) => [...prev, { role: "ai", text: data.reply }])
     } catch (error: any) {
       console.error("Error:", error)
-      const errorMsg = error.message.includes("quota") || error.message.includes("Failed")
-        ? "My API key has exceeded its rate limit. Please try again in a minute!"
-        : "Sorry, I'm having trouble connecting right now. Please try again later."
-      setMessages((prev) => [...prev, { role: "ai", text: errorMsg }])
+      const errorMsg = error.message || "Sorry, I'm having trouble connecting right now."
+      setMessages((prev) => [...prev, { role: "ai", text: `Error: ${errorMsg}` }])
     } finally {
       setIsLoading(false)
     }
