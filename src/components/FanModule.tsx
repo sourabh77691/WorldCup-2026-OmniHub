@@ -1,11 +1,15 @@
 "use client"
 
 import React, { useState } from "react"
-import { Send, Map, Navigation } from "lucide-react"
+import { Send, Map, Navigation, Settings2, Accessibility } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { useChat } from "@/hooks/useChat"
 
 const StadiumMap = React.memo(({ activeGate }: { activeGate: string | null }) => {
   return (
@@ -46,57 +50,53 @@ const StadiumMap = React.memo(({ activeGate }: { activeGate: string | null }) =>
 StadiumMap.displayName = "StadiumMap"
 
 export function FanModule() {
-  const [messages, setMessages] = useState<{ role: "user" | "ai"; text: string }[]>([
-    { role: "ai", text: "Welcome to the WorldCup 2026 OmniHub! How can I help you today? I can assist with stadium navigation, transportation, or match info." },
-  ])
-  const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [activeGate, setActiveGate] = useState<string | null>(null)
+  const { messages, input, setInput, isLoading, activeGate, sendMessage } = useChat()
+  const [language, setLanguage] = useState("English")
+  const [accessibleRoute, setAccessibleRoute] = useState(false)
 
-  const handleSend = async () => {
-    if (!input.trim()) return
-
-    const userMessage = input.trim()
-    const newMessages: { role: "user" | "ai"; text: string }[] = [...messages, { role: "user", text: userMessage }]
-    setMessages(newMessages)
-    setInput("")
-    setIsLoading(true)
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages }),
-      })
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}))
-        throw new Error(errData.error || "Network response was not ok")
-      }
-      
-      const data = await response.json()
-      setMessages((prev) => [...prev, { role: "ai", text: data.reply }])
-      
-      if (data.highlightGate !== undefined) {
-        setActiveGate(data.highlightGate)
-      }
-    } catch (error: any) {
-      console.error("Error:", error)
-      const errorMsg = error.message || "Sorry, I'm having trouble connecting right now."
-      setMessages((prev) => [...prev, { role: "ai", text: `Error: ${errorMsg}` }])
-    } finally {
-      setIsLoading(false)
-    }
+  const handleSend = () => {
+    sendMessage(undefined, language, accessibleRoute)
   }
 
   return (
     <div className="grid gap-6 lg:grid-cols-3 h-[600px]">
       <Card className="lg:col-span-2 flex flex-col h-full border-primary/20 shadow-lg">
         <CardHeader className="bg-primary/5 pb-4 border-b">
-          <CardTitle className="text-2xl flex items-center gap-2 text-primary">
-            <span role="img" aria-label="bot">🤖</span> OmniBot Assistant
+          <CardTitle className="flex items-center gap-2">
+            <span className="text-2xl">🤖</span> OmniBot Assistant
           </CardTitle>
-          <CardDescription>Multilingual fan support, navigation, and transport routing.</CardDescription>
+          <CardDescription>Ask me for directions, food wait times, or game stats!</CardDescription>
+          
+          {/* New Problem Statement Alignment Features */}
+          <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-border/50">
+            <div className="flex items-center gap-2">
+              <Settings2 className="w-4 h-4 text-muted-foreground" />
+              <Select value={language} onValueChange={(val) => val && setLanguage(val)}>
+                <SelectTrigger className="w-[120px] h-8 text-xs" aria-label="Select Language">
+                  <SelectValue placeholder="Language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="English">English</SelectItem>
+                  <SelectItem value="Spanish">Spanish</SelectItem>
+                  <SelectItem value="French">French</SelectItem>
+                  <SelectItem value="Arabic">Arabic</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="accessibility-mode" 
+                checked={accessibleRoute}
+                onCheckedChange={setAccessibleRoute}
+                aria-label="Toggle Wheelchair Accessible Route"
+              />
+              <Label htmlFor="accessibility-mode" className="text-xs flex items-center gap-1 cursor-pointer">
+                <Accessibility className="w-3 h-3" />
+                Accessible Route
+              </Label>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col p-4 overflow-hidden bg-background">
           <ScrollArea className="flex-1 pr-4">

@@ -5,9 +5,11 @@ import { chatRateLimiter } from "@/lib/rateLimit"
 
 const ChatRequestSchema = z.object({
   messages: z.array(z.object({
-    role: z.enum(["user", "ai"]),
+    role: z.enum(["user", "ai", "system"]),
     text: z.string()
-  }))
+  })),
+  language: z.string().optional().default("English"),
+  accessibleRoute: z.boolean().optional().default(false)
 })
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
@@ -24,9 +26,16 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid request format", details: parsed.error }, { status: 400 })
     }
-    const { messages } = parsed.data
+    const { messages, language, accessibleRoute } = parsed.data;
 
     const conversation = messages.map((m: any) => `${m.role === 'ai' ? 'Assistant' : 'User'}: ${m.text}`).join('\n\n');
+    
+    let systemInstruction = `You are a helpful stadium assistant for the FIFA World Cup 2026. Keep answers concise. `
+    systemInstruction += `You MUST strictly reply in the following language: ${language}. `
+    if (accessibleRoute) {
+      systemInstruction += `The user requires WHEELCHAIR ACCESSIBLE ROUTING. You MUST prioritize elevators and ramps, and explicitly state accessible paths in your directions. `
+    }
+    systemInstruction += `\n\nHere is the conversation history:\n\n${conversation}\n\nPlease respond to the user's last message.`
 
     let response;
     let retries = 3;
@@ -39,7 +48,7 @@ export async function POST(req: Request) {
           contents: [
             {
               role: "user",
-              parts: [{ text: `You are a helpful stadium assistant for the FIFA World Cup 2026. Keep answers concise. Here is the conversation history:\n\n${conversation}\n\nPlease respond to the user's last message.` }],
+              parts: [{ text: systemInstruction }],
             },
           ],
           config: {

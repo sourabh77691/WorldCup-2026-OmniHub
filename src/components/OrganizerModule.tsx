@@ -1,43 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Users, AlertTriangle, ShieldCheck, Activity } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
-type PredictionData = {
-  incidentCount: number;
-  hotspots: { location: string; estimatedWaitTime: string; severity: "Medium" | "High" }[];
-  recommendations: string[];
-};
+import { useCrowdPredictions } from "@/hooks/useCrowdPredictions"
 
 export function OrganizerModule() {
-  const [predictions, setPredictions] = useState<PredictionData | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const { predictions, isLoading, mutate } = useCrowdPredictions()
+  const lastUpdate = new Date() // Since SWR handles caching, we can just use current time or rely on SWR's internal mechanisms, but keeping it simple.
 
-  const fetchPredictions = async () => {
-    setIsLoading(true)
-    try {
-      const res = await fetch("/api/crowd-predictions")
-      if (res.ok) {
-        const data = await res.json()
-        setPredictions(data)
-        setLastUpdate(new Date())
-      }
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
-  useEffect(() => {
-    fetchPredictions()
-    const interval = setInterval(fetchPredictions, 120000) // update every 2 mins
-    return () => clearInterval(interval)
-  }, [])
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -90,7 +64,7 @@ export function OrganizerModule() {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={fetchPredictions}
+            onClick={() => mutate()}
             disabled={isLoading}
             className="shadow-sm"
           >
