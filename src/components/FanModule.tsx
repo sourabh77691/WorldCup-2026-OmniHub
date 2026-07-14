@@ -29,13 +29,19 @@ export function FanModule() {
         body: JSON.stringify({ message: userMessage }),
       })
 
-      if (!response.ok) throw new Error("Network response was not ok")
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        throw new Error(errData.error || "Network response was not ok")
+      }
       
       const data = await response.json()
       setMessages((prev) => [...prev, { role: "ai", text: data.reply }])
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error:", error)
-      setMessages((prev) => [...prev, { role: "ai", text: "Sorry, I'm having trouble connecting right now. Please try again later." }])
+      const errorMsg = error.message.includes("quota") || error.message.includes("Failed")
+        ? "My API key has exceeded its rate limit. Please try again in a minute!"
+        : "Sorry, I'm having trouble connecting right now. Please try again later."
+      setMessages((prev) => [...prev, { role: "ai", text: errorMsg }])
     } finally {
       setIsLoading(false)
     }
